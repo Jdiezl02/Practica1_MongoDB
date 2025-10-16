@@ -46,18 +46,18 @@ db["Practica 01"].aggregate([{ $unwind: "$reviews" },
 
 ## Ej 1
 
-´´´
+```
 db["Practica 01"].find({"stock": {$lt: 5}})
-´´´
+```
 
 ## Ej 2
 
-´´´
+```
 db["Practica 01"].find({},{nombre: 1, _id: 0,precio: 1})
-´´´
+```
 
 ## Ej 3
 
-´´´
+```
 deleteOne({ _id: "SKU-001" })
-´´´
+```
