@@ -1,0 +1,192 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Mini Red Social</title>
+  <style>
+    body {
+      font-family: Arial, sans-serif;
+      margin: 40px;
+      background: #f8f9fa;
+      color: #333;
+    }
+
+    h1, h2 {
+      color: #007bff;
+    }
+
+    section {
+      background: #fff;
+      padding: 20px;
+      margin-bottom: 20px;
+      border-radius: 8px;
+      box-shadow: 0 2px 5px rgba(0,0,0,0.1);
+    }
+
+    input {
+      padding: 8px;
+      margin: 5px;
+      border-radius: 4px;
+      border: 1px solid #ccc;
+    }
+
+    button {
+      padding: 8px 15px;
+      background: #007bff;
+      border: none;
+      border-radius: 4px;
+      color: white;
+      cursor: pointer;
+    }
+
+    button:hover {
+      background: #0056b3;
+    }
+
+    ul {
+      list-style-type: none;
+      padding: 0;
+    }
+
+    li {
+      padding: 6px 0;
+      border-bottom: 1px solid #eee;
+    }
+
+    .flex {
+      display: flex;
+      gap: 10px;
+      flex-wrap: wrap;
+      align-items: center;
+    }
+
+    .status {
+      margin-top: 10px;
+      color: green;
+      font-weight: bold;
+    }
+
+    .error {
+      color: red;
+    }
+  </style>
+</head>
+<body>
+  <h1>Mini Red Social con Flask + Neo4j</h1>
+
+  <section>
+    <h2>👤 Usuarios</h2>
+    <div class="flex">
+      <input id="username" placeholder="Username">
+      <input id="name" placeholder="Nombre">
+      <button onclick="crearUsuario()">Crear</button>
+      <button onclick="actualizarUsuario()">Actualizar nombre</button>
+      <button onclick="cargarUsuarios()">Listar usuarios</button>
+    </div>
+    <ul id="listaUsuarios"></ul>
+  </section>
+
+  <section>
+    <h2>🔗 Seguir usuario</h2>
+    <div class="flex">
+      <input id="from" placeholder="De (usuario)">
+      <input id="to" placeholder="A (usuario)">
+      <button onclick="seguir()">Seguir</button>
+    </div>
+  </section>
+
+  <section>
+    <h2>🤝 Seguimientos mutuos</h2>
+    <button onclick="verMutuos()">Ver</button>
+    <ul id="mutuos"></ul>
+  </section>
+
+  <div id="status" class="status"></div>
+
+  <script>
+    const API = "http://localhost:5000";
+    const statusDiv = document.getElementById("status");
+
+    function showStatus(msg, isError = false) {
+      statusDiv.textContent = msg;
+      statusDiv.className = isError ? "status error" : "status";
+      setTimeout(() => { statusDiv.textContent = ""; }, 3000);
+    }
+
+    async function cargarUsuarios() {
+      try {
+        const res = await fetch(API + "/users");
+        const data = await res.json();
+        document.getElementById("listaUsuarios").innerHTML =
+          data.map(u => `<li><b>${u.username}</b> — ${u.name}</li>`).join("");
+        showStatus("Usuarios cargados correctamente");
+      } catch (err) {
+        showStatus("Error al cargar usuarios", true);
+      }
+    }
+
+    async function crearUsuario() {
+      const username = document.getElementById("username").value.trim();
+      const name = document.getElementById("name").value.trim();
+      if (!username || !name) return showStatus("Campos obligatorios", true);
+
+      const res = await fetch(API + "/users", {
+        method: "POST",
+        headers: {"Content-Type": "application/json"},
+        body: JSON.stringify({username, name})
+      });
+
+      const data = await res.json();
+      showStatus(data.message || "Error");
+      cargarUsuarios();
+    }
+
+    async function actualizarUsuario() {
+      const username = document.getElementById("username").value.trim();
+      const name = document.getElementById("name").value.trim();
+      if (!username || !name) return showStatus("Campos obligatorios", true);
+
+      const res = await fetch(API + "/users", {
+        method: "POST",
+        headers: {"Content-Type": "application/json"},
+        body: JSON.stringify({username, name})
+      });
+
+      const data = await res.json();
+      showStatus(`Usuario ${username} actualizado`);
+      cargarUsuarios();
+    }
+
+    async function seguir() {
+      const from = document.getElementById("from").value.trim();
+      const to = document.getElementById("to").value.trim();
+      if (!from || !to) return showStatus("Campos obligatorios", true);
+
+      const res = await fetch(API + "/follow", {
+        method: "POST",
+        headers: {"Content-Type": "application/json"},
+        body: JSON.stringify({from, to})
+      });
+
+      const data = await res.json();
+      showStatus(data.message || "Acción realizada");
+    }
+
+    async function verMutuos() {
+      try {
+        const res = await fetch(API + "/mutual_follows");
+        const data = await res.json();
+        document.getElementById("mutuos").innerHTML =
+          data.length
+            ? data.map(p => `<li>${p.user1} ↔ ${p.user2}</li>`).join("")
+            : "<li>No hay relaciones mutuas</li>";
+      } catch (err) {
+        showStatus("Error al cargar mutuos", true);
+      }
+    }
+
+    cargarUsuarios();
+  </script>
+</body>
+</html>
